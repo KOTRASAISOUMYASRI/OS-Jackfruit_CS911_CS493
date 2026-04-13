@@ -1,0 +1,1 @@
+savedcmd_/home/seed/OS-Jackfruit/boilerplate/monitor.mod := printf '%s\n'   monitor.o | awk '!x[$$0]++ { print("/home/seed/OS-Jackfruit/boilerplate/"$$0) }' > /home/seed/OS-Jackfruit/boilerplate/monitor.mod

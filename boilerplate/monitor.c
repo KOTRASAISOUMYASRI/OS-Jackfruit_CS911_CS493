@@ -11,7 +11,7 @@
  * YOUR WORK: Fill in all sections marked // TODO.
  */
 
-#include <linux/cdev.h>
+/*#include <linux/cdev.h>
 #include <linux/device.h>
 #include <linux/fs.h>
 #include <linux/kernel.h>
@@ -54,7 +54,7 @@
 
 
 /* --- Provided: internal device / timer state --- */
-static struct timer_list monitor_timer;
+/*static struct timer_list monitor_timer;
 static dev_t dev_num;
 static struct cdev c_dev;
 static struct class *cl;
@@ -65,7 +65,7 @@ static struct class *cl;
  * Returns the Resident Set Size in bytes for the given PID,
  * or -1 if the task no longer exists.
  * --------------------------------------------------------------- */
-static long get_rss_bytes(pid_t pid)
+/*static long get_rss_bytes(pid_t pid)
 {
     struct task_struct *task;
     struct mm_struct *mm;
@@ -95,7 +95,7 @@ static long get_rss_bytes(pid_t pid)
  *
  * Log a warning when a process exceeds the soft limit.
  * --------------------------------------------------------------- */
-static void log_soft_limit_event(const char *container_id,
+/*static void log_soft_limit_event(const char *container_id,
                                  pid_t pid,
                                  unsigned long limit_bytes,
                                  long rss_bytes)
@@ -110,7 +110,7 @@ static void log_soft_limit_event(const char *container_id,
  *
  * Kill a process when it exceeds the hard limit.
  * --------------------------------------------------------------- */
-static void kill_process(const char *container_id,
+/*static void kill_process(const char *container_id,
                          pid_t pid,
                          unsigned long limit_bytes,
                          long rss_bytes)
@@ -131,7 +131,7 @@ static void kill_process(const char *container_id,
 /* ---------------------------------------------------------------
  * Timer Callback - fires every CHECK_INTERVAL_SEC seconds.
  * --------------------------------------------------------------- */
-static void timer_callback(struct timer_list *t)
+/*static void timer_callback(struct timer_list *t)
 {
     /* ==============================================================
      * TODO 3: Implement periodic monitoring.
@@ -144,7 +144,7 @@ static void timer_callback(struct timer_list *t)
      *   - avoid use-after-free while deleting during iteration
      * ============================================================== */
 
-    mod_timer(&monitor_timer, jiffies + CHECK_INTERVAL_SEC * HZ);
+  /*  mod_timer(&monitor_timer, jiffies + CHECK_INTERVAL_SEC * HZ);
 }
 
 /* ---------------------------------------------------------------
@@ -154,7 +154,7 @@ static void timer_callback(struct timer_list *t)
  *   - register a PID with soft + hard limits
  *   - unregister a PID when the runtime no longer needs tracking
  * --------------------------------------------------------------- */
-static long monitor_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
+/*static long monitor_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 {
     struct monitor_request req;
 
@@ -180,7 +180,7 @@ static long monitor_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
          *   - insert into the shared list under the chosen lock
          * ============================================================== */
 
-        return 0;
+  /*      return 0;
     }
 
     printk(KERN_INFO
@@ -196,17 +196,17 @@ static long monitor_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
      *   - return status indicating whether a matching entry was removed
      * ============================================================== */
 
-    return -ENOENT;
+    /*return -ENOENT;
 }
 
 /* --- Provided: file operations --- */
-static struct file_operations fops = {
+/*static struct file_operations fops = {
     .owner = THIS_MODULE,
     .unlocked_ioctl = monitor_ioctl,
 };
 
 /* --- Provided: Module Init --- */
-static int __init monitor_init(void)
+/*static int __init monitor_init(void)
 {
     if (alloc_chrdev_region(&dev_num, 0, 1, DEVICE_NAME) < 0)
         return -1;
@@ -243,7 +243,7 @@ static int __init monitor_init(void)
 }
 
 /* --- Provided: Module Exit --- */
-static void __exit monitor_exit(void)
+/*static void __exit monitor_exit(void)
 {
     del_timer_sync(&monitor_timer);
 
@@ -255,16 +255,110 @@ static void __exit monitor_exit(void)
      *   - leave no leaked state on module unload
      * ============================================================== */
 
-    cdev_del(&c_dev);
-    device_destroy(cl, dev_num);
-    class_destroy(cl);
-    unregister_chrdev_region(dev_num, 1);
 
-    printk(KERN_INFO "[container_monitor] Module unloaded.\n");
+//  cdev_del(&c_dev);
+  //  device_destroy(cl, dev_num);
+    //class_destroy(cl);
+    //unregister_chrdev_region(dev_num, 1);
+
+    //printk(KERN_INFO "[container_monitor] Module unloaded.\n");
+//}
+
+//module_init(monitor_init);
+//module_exit(monitor_exit);
+//MODULE_LICENSE("GPL");
+//MODULE_DESCRIPTION("Supervised multi-container memory monitor");
+
+
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/init.h>
+#include <linux/fs.h>
+#include <linux/uaccess.h>
+#include <linux/cdev.h>
+#include <linux/device.h>
+#include <linux/sched/signal.h>
+
+#define DEVICE_NAME "monitor"
+#define CLASS_NAME "monitor_class"
+
+static int major;
+static struct class *monitor_class = NULL;
+static struct device *monitor_device = NULL;
+
+/* ================= IOCTL COMMAND ================= */
+#define IOCTL_MONITOR_PID _IOW('a', 'a', int)
+
+/* ================= IOCTL HANDLER ================= */
+static long monitor_ioctl(struct file *file, unsigned int cmd, unsigned long arg) {
+    int pid;
+    struct task_struct *task;
+
+    if (cmd == IOCTL_MONITOR_PID) {
+        if (copy_from_user(&pid, (int *)arg, sizeof(pid))) {
+            printk(KERN_ERR "Failed to copy PID from user\n");
+            return -EFAULT;
+        }
+
+        printk(KERN_INFO "Received PID: %d\n", pid);
+
+        task = pid_task(find_vpid(pid), PIDTYPE_PID);
+        if (task) {
+            printk(KERN_INFO "Process name: %s\n", task->comm);
+        } else {
+            printk(KERN_INFO "Process not found\n");
+        }
+    }
+
+    return 0;
+}
+
+/* ================= FILE OPERATIONS ================= */
+static struct file_operations fops = {
+    .owner = THIS_MODULE,
+    .unlocked_ioctl = monitor_ioctl,
+};
+
+/* ================= INIT ================= */
+static int __init monitor_init(void) {
+    printk(KERN_INFO "Monitor module loaded\n");
+
+    major = register_chrdev(0, DEVICE_NAME, &fops);
+    if (major < 0) {
+        printk(KERN_ALERT "Failed to register device\n");
+        return major;
+    }
+
+    monitor_class = class_create(CLASS_NAME);
+    if (IS_ERR(monitor_class)) {
+        unregister_chrdev(major, DEVICE_NAME);
+        return PTR_ERR(monitor_class);
+    }
+
+    monitor_device = device_create(monitor_class, NULL, MKDEV(major, 0), NULL, DEVICE_NAME);
+    if (IS_ERR(monitor_device)) {
+        class_destroy(monitor_class);
+        unregister_chrdev(major, DEVICE_NAME);
+        return PTR_ERR(monitor_device);
+    }
+
+    printk(KERN_INFO "/dev/monitor created\n");
+    return 0;
+}
+
+/* ================= EXIT ================= */
+static void __exit monitor_exit(void) {
+    device_destroy(monitor_class, MKDEV(major, 0));
+    class_unregister(monitor_class);
+    class_destroy(monitor_class);
+    unregister_chrdev(major, DEVICE_NAME);
+
+    printk(KERN_INFO "Monitor module unloaded\n");
 }
 
 module_init(monitor_init);
 module_exit(monitor_exit);
 
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("Supervised multi-container memory monitor");
+MODULE_AUTHOR("You");
+MODULE_DESCRIPTION("Simple Container Monitor");

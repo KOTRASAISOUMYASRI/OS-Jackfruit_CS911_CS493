@@ -1,0 +1,1 @@
+savedcmd_/home/seed/OS-Jackfruit/boilerplate/Module.symvers :=  scripts/mod/modpost -M -m -a      -o /home/seed/OS-Jackfruit/boilerplate/Module.symvers -T /home/seed/OS-Jackfruit/boilerplate/modules.order -i Module.symvers -e 

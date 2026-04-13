@@ -1,3 +1,5 @@
+
+
 /*
  * engine.c - Supervised Multi-Container Runtime (User Space)
  *
@@ -13,7 +15,7 @@
  *   - clone + namespace setup for each container
  *   - producer/consumer behavior for log buffering
  *   - signal handling and graceful shutdown
- */
+
 
 #define _GNU_SOURCE
 #include <errno.h>
@@ -286,8 +288,7 @@ static void bounded_buffer_begin_shutdown(bounded_buffer_t *buffer)
  *   - block or fail according to your chosen policy when the buffer is full
  *   - wake consumers correctly
  *   - stop cleanly if shutdown begins
- */
-int bounded_buffer_push(bounded_buffer_t *buffer, const log_item_t *item)
+ int bounded_buffer_push(bounded_buffer_t *buffer, const log_item_t *item)
 {
     (void)buffer;
     (void)item;
@@ -302,7 +303,7 @@ int bounded_buffer_push(bounded_buffer_t *buffer, const log_item_t *item)
  *   - wait correctly while the buffer is empty
  *   - return a useful status when shutdown is in progress
  *   - avoid races with producers and shutdown
- */
+ 
 int bounded_buffer_pop(bounded_buffer_t *buffer, log_item_t *item)
 {
     (void)buffer;
@@ -318,7 +319,7 @@ int bounded_buffer_pop(bounded_buffer_t *buffer, log_item_t *item)
  *   - remove log chunks from the bounded buffer
  *   - route each chunk to the correct per-container log file
  *   - exit cleanly when shutdown begins and pending work is drained
- */
+ 
 void *logging_thread(void *arg)
 {
     (void)arg;
@@ -335,7 +336,7 @@ void *logging_thread(void *arg)
  *   - working /proc inside container
  *   - stdout / stderr redirected to the supervisor logging path
  *   - configured command executed inside the container
- */
+ 
 int child_fn(void *arg)
 {
     (void)arg;
@@ -386,7 +387,7 @@ int unregister_from_monitor(int monitor_fd, const char *container_id, pid_t host
  *   - start the logging thread
  *   - accept control requests and update container state
  *   - reap children and respond to signals
- */
+ 
 static int run_supervisor(const char *rootfs)
 {
     supervisor_ctx_t ctx;
@@ -418,7 +419,7 @@ static int run_supervisor(const char *rootfs)
      *   3) install SIGCHLD / SIGINT / SIGTERM handling
      *   4) spawn the logger thread
      *   5) enter the supervisor event loop
-     */
+    
     fprintf(stderr, "Supervisor mode not implemented yet for base-rootfs: %s\n", rootfs);
 
     bounded_buffer_begin_shutdown(&ctx.log_buffer);
@@ -434,7 +435,7 @@ static int run_supervisor(const char *rootfs)
  * The CLI commands should use a second IPC mechanism distinct from the
  * logging pipe. A UNIX domain socket is the most direct option, but a
  * FIFO or shared memory design is also acceptable if justified.
- */
+ 
 static int send_control_request(const control_request_t *req)
 {
     (void)req;
@@ -503,7 +504,7 @@ static int cmd_ps(void)
      * TODO:
      * The supervisor should respond with container metadata.
      * Keep the rendering format simple enough for demos and debugging.
-     */
+
     printf("Expected states include: %s, %s, %s, %s, %s\n",
            state_to_string(CONTAINER_STARTING),
            state_to_string(CONTAINER_RUNNING),
@@ -578,3 +579,473 @@ int main(int argc, char *argv[])
     usage(argv[0]);
     return 1;
 }
+
+
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sched.h>
+#include <sys/wait.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sched.h>
+#include <sys/wait.h>
+
+#define STACK_SIZE (1024 * 1024)
+
+char container_stack[STACK_SIZE];
+
+int child_func(void *arg) {
+    char **argv = (char **)arg;
+
+    printf("Inside container!\n");
+
+    // Set hostname
+    sethostname("container", 10);
+
+    // Change root filesystem
+    if (chroot("rootfs-alpha") != 0) {
+        perror("chroot failed");
+        exit(1);
+    }
+
+    chdir("/");
+
+    // Execute program inside container
+    execvp(argv[0], argv);
+
+    perror("exec failed");
+    return 1;
+}
+
+int main(int argc, char *argv[]) {
+    if (argc < 4) {
+        printf("Usage: %s run <name> <program>\n", argv[0]);
+        return 1;
+    }
+
+    if (strcmp(argv[1], "run") == 0) {
+        printf("Starting container: %s\n", argv[2]);
+
+        char *child_args[] = { argv[3], NULL };
+
+        int flags = CLONE_NEWUTS | CLONE_NEWPID | CLONE_NEWNS;
+
+        int pid = clone(child_func,
+                        container_stack + STACK_SIZE,
+                        flags | SIGCHLD,
+                        child_args);
+
+        if (pid < 0) {
+            perror("clone failed");
+            return 1;
+        }
+
+        waitpid(pid, NULL, 0);
+        printf("Container stopped\n");
+    }
+
+    return 0;
+}
+
+
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sched.h>
+#include <sys/wait.h>
+#include <signal.h>
+
+#define STACK_SIZE (1024 * 1024)
+#define MAX_CONTAINERS 10
+
+char container_stack[STACK_SIZE];
+
+struct container {
+    char name[50];
+    int pid;
+};
+
+struct container containers[MAX_CONTAINERS];
+int container_count = 0;
+
+ ================= CHILD FUNCTION =================
+int child_func(void *arg) {
+    char **argv = (char **)arg;
+
+    printf("Inside container!\n");
+
+    sethostname("container", 10);
+
+    if (chroot("rootfs-alpha") != 0) {
+        perror("chroot failed");
+        exit(1);
+    }
+
+    chdir("/");
+
+    execvp(argv[0], argv);
+
+    perror("exec failed");
+    return 1;
+}
+
+ ================= MAIN ================= 
+int main(int argc, char *argv[]) {
+
+    if (argc < 2) {
+        printf("Usage:\n");
+        printf("  %s run <name> <program>\n", argv[0]);
+        printf("  %s list\n", argv[0]);
+        printf("  %s stop <name>\n", argv[0]);
+        return 1;
+    }
+
+     ================= RUN ================= 
+    if (strcmp(argv[1], "run") == 0) {
+        if (argc < 4) {
+            printf("Usage: %s run <name> <program>\n", argv[0]);
+            return 1;
+        }
+
+        printf("Starting container: %s\n", argv[2]);
+
+        char *child_args[] = { argv[3], NULL };
+
+        int flags = CLONE_NEWUTS | CLONE_NEWPID | CLONE_NEWNS;
+
+        int pid = clone(child_func,
+                        container_stack + STACK_SIZE,
+                        flags | SIGCHLD,
+                        child_args);
+
+        if (pid < 0) {
+            perror("clone failed");
+            return 1;
+        }
+
+        // Save container info
+        containers[container_count].pid = pid;
+        strcpy(containers[container_count].name, argv[2]);
+        container_count++;
+
+        printf("Container %s started with PID %d\n", argv[2], pid);
+    }
+
+     ================= LIST ================= 
+    else if (strcmp(argv[1], "list") == 0) {
+        printf("Running containers:\n");
+
+        if (container_count == 0) {
+            printf("No containers running\n");
+            return 0;
+        }
+
+        for (int i = 0; i < container_count; i++) {
+            printf("Name: %s | PID: %d\n",
+                   containers[i].name,
+                   containers[i].pid);
+        }
+    }
+
+     ================= STOP =================
+    else if (strcmp(argv[1], "stop") == 0) {
+        if (argc < 3) {
+            printf("Usage: %s stop <name>\n", argv[0]);
+            return 1;
+        }
+
+        for (int i = 0; i < container_count; i++) {
+            if (strcmp(containers[i].name, argv[2]) == 0) {
+
+                kill(containers[i].pid, SIGKILL);
+                printf("Stopped container: %s\n", containers[i].name);
+
+                // Remove from list
+                for (int j = i; j < container_count - 1; j++) {
+                    containers[j] = containers[j + 1];
+                }
+
+                container_count--;
+                return 0;
+            }
+        }
+
+        printf("Container not found\n");
+    }
+
+    else {
+        printf("Unknown command\n");
+    }
+
+    return 0;
+}
+*/
+
+/*
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sched.h>
+#include <sys/wait.h>
+#include <signal.h>
+
+#define STACK_SIZE (1024 * 1024)
+
+char container_stack[STACK_SIZE];
+
+ ================= CHILD FUNCTION ================= /
+int child_func(void *arg) {
+    char **argv = (char **)arg;
+
+    printf("Inside container!\n");
+
+    sethostname("container", 10);
+
+    if (chroot("rootfs-alpha") != 0) {
+        perror("chroot failed");
+        exit(1);
+    }
+
+    chdir("/");
+
+    execvp(argv[0], argv);
+
+    perror("exec failed");
+    return 1;
+}
+
+/* ================= MAIN ================= *
+int main(int argc, char *argv[]) {
+
+    if (argc < 2) {
+        printf("Usage:\n");
+        printf("  %s run <name> <program>\n", argv[0]);
+        printf("  %s list\n", argv[0]);
+        printf("  %s stop <name>\n", argv[0]);
+        return 1;
+    }
+
+    /* ================= RUN ================= /
+    if (strcmp(argv[1], "run") == 0) {
+        if (argc < 4) {
+            printf("Usage: %s run <name> <program>\n", argv[0]);
+            return 1;
+        }
+
+        printf("Starting container: %s\n", argv[2]);
+
+        char *child_args[] = { argv[3], NULL };
+
+        int flags = CLONE_NEWUTS | CLONE_NEWPID | CLONE_NEWNS;
+
+        int pid = clone(child_func,
+                        container_stack + STACK_SIZE,
+                        flags | SIGCHLD,
+                        child_args);
+
+        if (pid < 0) {
+            perror("clone failed");
+            return 1;
+        }
+
+        printf("Container %s started with PID %d\n", argv[2], pid);
+    }
+
+    /* ================= LIST ================= *
+    else if (strcmp(argv[1], "list") == 0) {
+        printf("Running containers:\n");
+
+        // Show running cpu_hog processes (our containers for now)
+        system("ps -ef | grep cpu_hog | grep -v grep");
+    }
+
+    /* ================= STOP ================= */
+/*
+    else if (strcmp(argv[1], "stop") == 0) {
+        if (argc < 3) {
+            printf("Usage: %s stop <name>\n", argv[0]);
+            return 1;
+        }
+
+        char command[100];
+
+        // kill by process name (temporary approach)
+
+    else {
+        printf("Unknown command\n");
+    }
+
+    return 0;
+}
+*/
+
+
+// Log start
+
+
+
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sched.h>
+#include <sys/wait.h>
+#include <signal.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+
+#define STACK_SIZE (1024 * 1024)
+
+char container_stack[STACK_SIZE];
+
+/* SAME IOCTL COMMAND AS KERNEL */
+#define IOCTL_MONITOR_PID _IOW('a', 'a', int)
+
+/* ================= LOGGING ================= */
+void log_event(const char *message) {
+    FILE *f = fopen("../logs/runtime.log", "a");
+    if (f == NULL) {
+        perror("log file error");
+        return;
+    }
+    fprintf(f, "%s\n", message);
+    fclose(f);
+}
+
+/* ================= CHILD ================= */
+int child_func(void *arg) {
+    char **argv = (char **)arg;
+
+    printf("Inside container!\n");
+
+    sethostname("container", 10);
+
+    if (chroot("rootfs-alpha") != 0) {
+        perror("chroot failed");
+        log_event("ERROR: chroot failed");
+        exit(1);
+    }
+
+    chdir("/");
+
+    execvp(argv[0], argv);
+
+    perror("exec failed");
+    log_event("ERROR: exec failed");
+
+    return 1;
+}
+
+/* ================= MAIN ================= */
+int main(int argc, char *argv[]) {
+
+    if (argc < 2) {
+        printf("Usage:\n");
+        printf("  %s run <name> <program>\n", argv[0]);
+        printf("  %s list\n", argv[0]);
+        printf("  %s stop <name>\n", argv[0]);
+        return 1;
+    }
+
+    /* ================= RUN ================= */
+    if (strcmp(argv[1], "run") == 0) {
+        if (argc < 4) {
+            printf("Usage: %s run <name> <program>\n", argv[0]);
+            return 1;
+        }
+
+        printf("Starting container: %s\n", argv[2]);
+
+        char *child_args[] = { argv[3], NULL };
+
+        int flags = CLONE_NEWUTS | CLONE_NEWPID | CLONE_NEWNS;
+
+        int pid = clone(child_func,
+                        container_stack + STACK_SIZE,
+                        flags | SIGCHLD,
+                        child_args);
+
+        if (pid < 0) {
+            perror("clone failed");
+            log_event("ERROR: clone failed");
+            return 1;
+        }
+
+        printf("Container %s started with PID %d\n", argv[2], pid);
+
+        // 🔥 SEND PID TO KERNEL
+        int fd = open("/dev/monitor", O_RDWR);
+        if (fd < 0) {
+            perror("open /dev/monitor failed");
+            log_event("ERROR: cannot open /dev/monitor");
+        } else {
+            ioctl(fd, IOCTL_MONITOR_PID, &pid);
+            close(fd);
+        }
+
+        // Log start
+        char log_msg[200];
+        sprintf(log_msg, "START: Container=%s PID=%d", argv[2], pid);
+        log_event(log_msg);
+    }
+
+    /* ================= LIST ================= */
+    else if (strcmp(argv[1], "list") == 0) {
+        printf("Running containers:\n");
+        system("ps -ef | grep cpu_hog | grep -v grep");
+    }
+
+    /* ================= STOP ================= */
+    else if (strcmp(argv[1], "stop") == 0) {
+        if (argc < 3) {
+            printf("Usage: %s stop <name>\n", argv[0]);
+            return 1;
+        }
+
+        char command[100];
+        sprintf(command, "pkill -f %s", argv[2]);
+        system(command);
+
+        printf("Stopped container: %s\n", argv[2]);
+
+        char log_msg[200];
+        sprintf(log_msg, "STOP: Container=%s", argv[2]);
+        log_event(log_msg);
+    }
+
+    else {
+        printf("Unknown command\n");
+    }
+
+    return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
