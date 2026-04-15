@@ -149,21 +149,29 @@ sudo rmmod monitor
 
 
 
-*`engine run` + `dmesg | tail`.*
+*CLI command is issued from user-space, and the kernel module receives the process information via ioctl, demonstrating interaction between user-space and kernel-space.*
 
 ---
 
 ### 3.5 **Soft-limit Warning**
 
+**Description:** Warning generated when memory usage crosses a defined threshold.
+
 <img width="767" height="91" alt="image" src="https://github.com/user-attachments/assets/90847ee1-f105-42de-bf7b-da661f193596" />
 
+
+*Soft limit warning shown in runtime logs.*
 
 ---
 
 ### 3.6 **Hard-limit Enforcement**
 
+**Description:** Container termination when usage exceeds maximum threshold.
+
 <img width="767" height="75" alt="image" src="https://github.com/user-attachments/assets/52fdf964-c999-4ded-be3c-2582095d899e" />
 
+
+*Container kill message shown in logs.*
 
 ---
 
@@ -188,7 +196,7 @@ sudo rmmod monitor
 <img width="918" height="161" alt="2" src="https://github.com/user-attachments/assets/3f07b0da-859f-4c10-a558-3e7c49028cb4" />
 
 
-* after this, `ps aux | grep engine` shows no running processes.
+*After stopping containers, `ps aux | grep engine` shows no running processes.*
 
 ---
 
@@ -199,6 +207,7 @@ sudo rmmod monitor
 * Kernel modules operate in privileged mode for system monitoring.
 * `ioctl` is used for communication between user-space and kernel-space.
 * Linux scheduler allocates CPU based on workload behavior.
+* The project demonstrates how lightweight containerization can be built using core Linux system calls without full container engines like Docker.
 
 ---
 
@@ -267,9 +276,9 @@ sudo rmmod monitor
 
 ## 🎯 Conclusion
 
-* Built a basic container runtime using C
-* Achieved process isolation using Linux primitives
-* Integrated kernel module with user-space runtime
-* Demonstrated scheduling behavior using workloads
+* Built a lightweight container runtime using C and Linux system calls  
+* Achieved process and filesystem isolation using namespaces and chroot  
+* Integrated kernel-space monitoring using a loadable kernel module  
+* Demonstrated scheduling behavior using CPU, memory, and I/O workloads
 
 ---
