@@ -190,7 +190,7 @@ sudo rmmod monitor
 <img width="918" height="161" alt="2" src="https://github.com/user-attachments/assets/3f07b0da-859f-4c10-a558-3e7c49028cb4" />
 
 
-* after this, `ps aux | grep engine` shows no running processes.*
+* after this, `ps aux | grep engine` shows no running processes.
 
 ---
 
