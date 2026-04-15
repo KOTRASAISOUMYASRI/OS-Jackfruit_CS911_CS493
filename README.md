@@ -4,12 +4,12 @@
 
 ## 1. 👥 Team Information
 
-###Member 1
+### Member 1
 * **Name:** KOTRA SAI SOUMYA SRI
 * **SRN:**  PES1UG24CS911
 
 
-###Member 2
+### Member 2
 * **Name:** TANMAYI NAGABHAIRAVA
 * **SRN:**  PES1UG24CS493
 
@@ -110,10 +110,10 @@ sudo rmmod monitor
 
 **Description:** Two or more containers running simultaneously.
 
-📸 **[Insert Screenshot Here]**
 <img width="851" height="506" alt="n5" src="https://github.com/user-attachments/assets/e3b97721-eab2-4718-a4ed-2ae7a7fa22eb" />
 
-*Show multiple containers running (cpu_hog, memory_hog, io_pulse).*
+
+*multiple containers running (cpu_hog, memory_hog, io_pulse).*
 
 ---
 
@@ -121,8 +121,10 @@ sudo rmmod monitor
 
 **Description:** Listing running containers and their PIDs.
 
-📸 **[Insert Screenshot Here]**
-*Show `./engine list` or `ps -ef | grep hog`.*
+<img width="788" height="135" alt="n4" src="https://github.com/user-attachments/assets/b19288c9-516d-401b-8684-6616ac6b22ff" />
+
+
+*`./engine list` or `ps -ef | grep hog`.*
 
 ---
 
@@ -130,7 +132,9 @@ sudo rmmod monitor
 
 **Description:** Container lifecycle events recorded in log file.
 
-📸 **[Insert Screenshot Here]**
+<img width="822" height="168" alt="3 1" src="https://github.com/user-attachments/assets/00768d55-3a6a-4811-ae12-f8bc0cf9069b" />
+
+
 *Show `cat runtime.log` output.*
 
 ---
@@ -139,8 +143,10 @@ sudo rmmod monitor
 
 **Description:** CLI command triggers supervisor, kernel module receives PID via ioctl.
 
-📸 **[Insert Screenshot Here]**
-*Show `engine run` + `dmesg | tail`.*
+<img width="1060" height="328" alt="n10" src="https://github.com/user-attachments/assets/e97fc44d-eff4-4abf-bacd-02de23e2cc77" />
+
+
+*`engine run` + `dmesg | tail`.*
 
 ---
 
@@ -164,8 +170,13 @@ sudo rmmod monitor
 
 **Description:** CPU, memory, and I/O workloads comparison.
 
-📸 **[Insert Screenshot Here]**
-*Show `top`, `free -h`, `ps` outputs.*
+<img width="1049" height="651" alt="n6" src="https://github.com/user-attachments/assets/574977c8-4c37-493b-bf16-400a3dd31aa6" />
+
+
+<img width="808" height="133" alt="n9" src="https://github.com/user-attachments/assets/686e336d-501d-4199-a2b9-61e91030aae3" />
+
+
+*`top`, `free -h`, `ps` outputs.*
 
 ---
 
@@ -174,7 +185,7 @@ sudo rmmod monitor
 **Description:** Containers stopped with no zombie processes.
 
 📸 **[Insert Screenshot Here]**
-*Show `ps aux | grep engine`.*
+* after this, `ps aux | grep engine` shows no running processes.*
 
 ---
 
@@ -257,16 +268,5 @@ sudo rmmod monitor
 * Achieved process isolation using Linux primitives
 * Integrated kernel module with user-space runtime
 * Demonstrated scheduling behavior using workloads
-
----
-
-## 📌 Notes
-
-* Replace `<Your Name>` and `<Your SRN>`
-* Add screenshots in `/images` folder:
-
-```md
-![Example](images/screenshot1.png)
-```
 
 ---
