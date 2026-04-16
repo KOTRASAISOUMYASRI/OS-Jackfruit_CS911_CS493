@@ -110,10 +110,14 @@ sudo rmmod monitor
 
 **Description:** Two or more containers running simultaneously.
 
+<img src="images/1.0.png" width="1000"/>
+
+<img src="images/1.20.png" width="1000"/>
+
 <img src="images/1.png" width="1000"/>
 
 
-*multiple containers running (cpu_hog, memory_hog, io_pulse).*
+*multiple containers running (cpu_hog, memory_hog, io_pulse). and in supervisor mode alpha,beta running*
 
 ---
 
@@ -181,6 +185,8 @@ sudo rmmod monitor
 
 <img src="images/9.png" width="1000"/>
 
+<img src="images/10.1.png" width="1000"/>
+
 *`top`, `free -h`, `ps` outputs.*
 
 ---
@@ -190,6 +196,8 @@ sudo rmmod monitor
 **Description:** Containers stopped with no zombie processes.
 
 <img src="images/10.png" width="1000"/>
+
+<img src="images/12.png" width="1000"/>
 
 *After stopping containers, `ps aux | grep engine` shows no running processes.*
 
