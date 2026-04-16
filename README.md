@@ -289,12 +289,3 @@ Containers stopped without leaving zombie processes.
 * Demonstrated scheduling behavior across workloads
 
 ---
-
-## Future Improvements
-
-* Add advanced container lifecycle management
-* Integrate cgroups for better resource control
-* Add networking between containers
-* Improve logging and visualization tools
-
----
